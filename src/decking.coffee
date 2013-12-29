@@ -444,7 +444,8 @@ getRunArg = (key, val, object, done) ->
       # because if we get an ENV_VAR=- format (the key being -) then
       # we'll prompt for the value
       iterator = (v, callback) ->
-        [key, value] = v.split "="
+        # split only on first occurence of '='
+        [key, value] = v.split /\=(.+)?/
 
         # first thing's first, try and substitute a real process.env value
         if value is "-" then value = process.env[key]
