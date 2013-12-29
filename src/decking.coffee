@@ -6,6 +6,7 @@ DepTree       = require "deptree"
 read          = require "read"
 Docker        = require "dockerode"
 JSONStream    = require "JSONStream"
+_             = require "lodash"
 
 MultiplexStream = require "./multiplex_stream"
 
@@ -294,6 +295,10 @@ class Decking
             command.container.start callback
 
       logAction name, "creating..."
+	    
+      # substitute the template invocations in exec with the
+      # keys in the context object. Enables dynamic env vars.
+      command.exec = _.template(command.exec, context)
 
       child_process.exec command.exec, callback
 
@@ -404,7 +409,7 @@ resolveOrder = (config, cluster, callback) ->
 
   # rename any containers based on group stuff, calc some max length stuff
   # merge group overrides if present
-  for _, container of containerDetails
+  for containerName, container of containerDetails
     container.originalName = container.name
     if groupName
       container.group = groupName
@@ -427,7 +432,7 @@ resolveOrder = (config, cluster, callback) ->
 
   # resolve dependency order
   depTree = new DepTree
-  for _, container of containerDetails
+  for containerName, container of containerDetails
     depTree.add container.originalName, container.dependencies
 
   list = (containerDetails[item] for item in depTree.resolve())
@@ -451,7 +456,8 @@ getRunArg = (key, val, object, done) ->
       # because if we get an ENV_VAR=- format (the key being -) then
       # we'll prompt for the value
       iterator = (v, callback) ->
-        [key, value] = v.split "="
+        # split only on first occurence of '='
+        [key, value] = v.split /\=(.+)?/
 
         # first thing's first, try and substitute a real process.env value
         if value is "-" then value = process.env[key]
