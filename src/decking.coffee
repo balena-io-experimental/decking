@@ -278,7 +278,7 @@ class Decking
 
           callback null
 
-    createIterator = (command, callback) ->
+    createIterator = (context, command, callback) ->
       name = command.name
 
       if command.exists
@@ -287,11 +287,24 @@ class Decking
         # @TODO check if this container has dependents or not...
         logAction name, "already exists - running in case of dependents"
         return isRunning command.container, (err, running) ->
-          return command.container.start callback if not running
+          if not running
+            return command.container.start (err) ->
+              return callback err if err
+              command.container.inspect (err, data) ->
+                return callback err if err
+
+                context[name] = data
+                callback null, context
 
           # container exists AND is running - stop, restart
           return command.container.stop (err) ->
-            command.container.start callback
+            command.container.start (err) ->
+              return callback err if err
+              command.container.inspect (err, data) ->
+                return callback err if err
+
+                context[name] = data
+                callback null, context
 
       logAction name, "creating..."
 	    
@@ -299,7 +312,16 @@ class Decking
       # keys in the context object. Enables dynamic env vars.
       command.exec = _.template(command.exec, context)
 
-      child_process.exec command.exec, callback
+      child_process.exec command.exec, (err, stdout, stderr) =>
+        if err
+          return callback err
+        else
+          container = docker.getContainer name
+          container.inspect (err, data) =>
+            return callback err if err
+
+            context[name] = data
+            callback null, context
 
     stopIterator = (details, callback) ->
       container = docker.getContainer details.name
@@ -308,7 +330,7 @@ class Decking
     resolveOrder @config, cluster, (list) ->
       async.eachSeries list, fetchIterator, (err) ->
         throw err if err
-        async.eachSeries commands, createIterator, (err) ->
+        async.reduce commands, {}, createIterator, (err, context) ->
           throw err if err
           # @FIXME hack to avoid ghosts with quick start/stop combos
           setTimeout ->
