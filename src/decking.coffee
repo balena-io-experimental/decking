@@ -294,6 +294,10 @@ class Decking
             command.container.start callback
 
       logAction name, "creating..."
+	    
+      # substitute the template invocations in exec with the
+      # keys in the context object. Enables dynamic env vars.
+      command.exec = _.template(command.exec, context)
 
       child_process.exec command.exec, callback
 
