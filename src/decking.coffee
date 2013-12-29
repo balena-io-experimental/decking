@@ -5,6 +5,7 @@ uuid          = require "node-uuid"
 DepTree       = require "deptree"
 read          = require "read"
 Docker        = require "dockerode"
+_             = require "lodash"
 
 MultiplexStream = require "./multiplex_stream"
 
@@ -397,7 +398,7 @@ resolveOrder = (config, cluster, callback) ->
 
   # rename any containers based on group stuff, calc some max length stuff
   # merge group overrides if present
-  for _, container of containerDetails
+  for containerName, container of containerDetails
     container.originalName = container.name
     if groupName
       container.group = groupName
@@ -420,7 +421,7 @@ resolveOrder = (config, cluster, callback) ->
 
   # resolve dependency order
   depTree = new DepTree
-  for _, container of containerDetails
+  for containerName, container of containerDetails
     depTree.add container.originalName, container.dependencies
 
   list = (containerDetails[item] for item in depTree.resolve())
