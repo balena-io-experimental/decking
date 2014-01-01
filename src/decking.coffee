@@ -108,7 +108,8 @@ class Decking
           logAction name, "skipping (already running)"
           callback null
 
-    resolveOrder @config, cluster, (list) ->
+    resolveOrder(@config, cluster)
+    .then (list) ->
 
       validateContainerPresence list, (err) ->
         return done err if err
@@ -133,7 +134,8 @@ class Decking
           logAction name, "skipping (already stopped)"
           callback null
 
-    resolveOrder @config, cluster, (list) ->
+    resolveOrder(@config, cluster)
+    .then (list) ->
 
       validateContainerPresence list, (err) ->
         return done err if err
@@ -154,7 +156,8 @@ class Decking
           logAction name, "starting..."
           container.start callback
 
-    resolveOrder @config, cluster, (list) ->
+    resolveOrder(@config, cluster)
+    .then (list) ->
 
       validateContainerPresence list, (err) ->
         return done err if err
@@ -201,7 +204,8 @@ class Decking
       container = getContainer details.name
       attach details.name, container, true, callback
 
-    resolveOrder @config, cluster, (list) ->
+    resolveOrder(@config, cluster)
+    .then (list) ->
 
       validateContainerPresence list, (err) ->
         return done err if err
@@ -226,7 +230,8 @@ class Decking
     # true, we don't care about the order of a cluster,
     # but we *do* care about implicit containers, so we have to run this
     # for now. Should split the methods out
-    resolveOrder @config, cluster, (list) -> async.eachLimit list, 5, iterator, done
+    resolveOrder(@config, cluster)
+    .then (list) -> async.eachLimit list, 5, iterator, done
 
   create: (cluster, done) ->
     # create a container based on metadata
@@ -307,7 +312,8 @@ class Decking
       container = getContainer details.name
       container.stop callback
 
-    resolveOrder @config, cluster, (list) ->
+    resolveOrder(@config, cluster)
+    .then (list) ->
       async.eachSeries list, fetchIterator, (err) ->
         throw err if err
         async.eachSeries commands, createIterator, (err) ->
@@ -385,7 +391,7 @@ logAction = (name, message) ->
   log "#{padName(name)}  #{message}"
 
 # @TODO rename; this does more than just order resolution now!
-resolveOrder = (config, cluster, callback) ->
+resolveOrder = (config, cluster) ->
   if cluster.group
     # right! specifying a group modifier. let's pump it up...
     groupName = cluster.group
@@ -440,7 +446,7 @@ resolveOrder = (config, cluster, callback) ->
 
   list = (containerDetails[item] for item in depTree.resolve())
 
-  callback list
+  return Promise.resolve(list)
 
 validateContainerPresence = (list, done) ->
   iterator = (details, callback) ->
