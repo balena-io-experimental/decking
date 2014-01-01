@@ -98,7 +98,7 @@ class Decking
 
     iterator = (details, callback) ->
       name = details.name
-      container = docker.getContainer name
+      container = getContainer name
       isRunning container, (err, running) ->
         if not running
           logAction name, "starting..."
@@ -122,7 +122,7 @@ class Decking
 
     iterator = (details, callback) ->
       name = details.name
-      container = docker.getContainer name
+      container = getContainer name
       isRunning container, (err, running) ->
         if running
           logAction name, "stopping..."
@@ -141,7 +141,7 @@ class Decking
   restart: (cluster, done) ->
     iterator = (details, callback) ->
       name = details.name
-      container = docker.getContainer name
+      container = getContainer name
       isRunning container, (err, running) ->
         if running
           logAction name, "restarting..."
@@ -194,7 +194,7 @@ class Decking
         callback? err
 
     iterator = (details, callback) ->
-      container = docker.getContainer details.name
+      container = getContainer details.name
       attach details.name, container, true, callback
 
     resolveOrder @config, cluster, (list) ->
@@ -208,7 +208,7 @@ class Decking
 
     iterator = (details, callback) ->
       name = details.name
-      container = docker.getContainer name
+      container = getContainer name
       container.inspect (err, data) ->
         if err # @TODO inspect
           logAction name, "does not exist"
@@ -237,7 +237,7 @@ class Decking
 
     fetchIterator = (details, callback) ->
       name = details.name
-      container = docker.getContainer name
+      container = getContainer name
 
       command =
         name: name
@@ -299,7 +299,7 @@ class Decking
       child_process.exec command.exec, callback
 
     stopIterator = (details, callback) ->
-      container = docker.getContainer details.name
+      container = getContainer details.name
       container.stop callback
 
     resolveOrder @config, cluster, (list) ->
@@ -440,7 +440,7 @@ resolveOrder = (config, cluster, callback) ->
 validateContainerPresence = (list, done) ->
   iterator = (details, callback) ->
     name = details.name
-    container = docker.getContainer name
+    container = getContainer name
     container.inspect callback
 
   async.eachSeries list, iterator, done
@@ -522,3 +522,7 @@ isRunning = (container, callback) ->
     return callback err if err
 
     return callback null, data.State.Running
+
+getContainer = (name) ->
+  container = docker.getContainer name
+  return Promise.promisifyAll container
