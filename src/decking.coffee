@@ -195,18 +195,18 @@ class Decking
         tty: false
         logs: fetchLogs
 
-      container.attach options, (err, stream) ->
+      container.attachAsync(options)
+      .then (stream) ->
         new MultiplexStream container, stream, padName(name, "(", ")")
 
         stream.on "end", ->
           logAction name, "gone away, will try to re-attach for one minute..."
           reAttach name, container
+        return null
 
-        callback? err
-
-    iterator = (details, callback) ->
+    iterator = (details) ->
       container = getContainer details.name
-      attach details.name, container, true, callback
+      attach details.name, container, true
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -214,7 +214,8 @@ class Decking
       validateContainerPresence list, (err) ->
         return done err if err
 
-        async.eachSeries list, iterator, done
+        eachSeries(list, iterator)
+        .nodeify(done)
 
   status: (cluster, done) ->
 
