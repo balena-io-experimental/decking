@@ -103,10 +103,11 @@ class Decking
       .then (running) ->
         if not running
           logAction name, "starting..."
-          container.start callback
+          return container.startAsync()
         else
           logAction name, "skipping (already running)"
-          callback null
+          return null
+      .nodeify callback
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -129,10 +130,11 @@ class Decking
       .then (running) ->
         if running
           logAction name, "stopping..."
-          container.stop callback
+          return container.stopAsync()
         else
           logAction name, "skipping (already stopped)"
-          callback null
+          return null
+      .nodeify callback
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -150,11 +152,13 @@ class Decking
       .then (running) ->
         if running
           logAction name, "restarting..."
-          container.stop (err) ->
-            container.start callback
+          return container.stopAsync()
         else
           logAction name, "starting..."
-          container.start callback
+          return null
+      .then ->
+        container.startAsync()
+      .nodeify callback
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -298,11 +302,12 @@ class Decking
         logAction name, "already exists - running in case of dependents"
         return isRunning(command.container)
         .then (running) ->
-          return command.container.start callback if not running
-
-          # container exists AND is running - stop, restart
-          return command.container.stop (err) ->
-            command.container.start callback
+          # container exists AND is running - stop first
+          if running
+            command.container.stopAsync()
+        .then ->
+          # then start
+          command.container.startAsync()
 
       logAction name, "creating..."
 
