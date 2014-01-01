@@ -96,7 +96,7 @@ class Decking
 
   start: (cluster, done) ->
 
-    iterator = (details, callback) ->
+    iterator = (details) ->
       name = details.name
       container = getContainer name
       isRunning(container)
@@ -107,7 +107,6 @@ class Decking
         else
           logAction name, "skipping (already running)"
           return null
-      .nodeify callback
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -115,7 +114,8 @@ class Decking
       validateContainerPresence list, (err) ->
         return done err if err
 
-        async.eachSeries list, iterator, done
+        eachSeries(list, iterator)
+        .nodeify done
 
 
   stop: (cluster, done) ->
@@ -123,7 +123,7 @@ class Decking
     # @TODO reverse dependency order? shutdown process might
     # involve signalling to them (e.g. final write, disconnect)
 
-    iterator = (details, callback) ->
+    iterator = (details) ->
       name = details.name
       container = getContainer name
       isRunning(container)
@@ -134,7 +134,6 @@ class Decking
         else
           logAction name, "skipping (already stopped)"
           return null
-      .nodeify callback
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -142,10 +141,11 @@ class Decking
       validateContainerPresence list, (err) ->
         return done err if err
 
-        async.eachSeries list, iterator, done
+        eachSeries(list, iterator)
+        .nodeify done
 
   restart: (cluster, done) ->
-    iterator = (details, callback) ->
+    iterator = (details) ->
       name = details.name
       container = getContainer name
       isRunning(container)
@@ -158,7 +158,6 @@ class Decking
           return null
       .then ->
         container.startAsync()
-      .nodeify callback
 
     resolveOrder(@config, cluster)
     .then (list) ->
@@ -166,7 +165,8 @@ class Decking
       validateContainerPresence list, (err) ->
         return done err if err
 
-        async.eachSeries list, iterator, done
+        eachSeries(list, iterator)
+        .nodeify done
 
   attach: (cluster, done) ->
 
@@ -454,12 +454,11 @@ resolveOrder = (config, cluster) ->
   return Promise.resolve(list)
 
 validateContainerPresence = (list, done) ->
-  iterator = (details, callback) ->
+  eachSeries list, (details) ->
     name = details.name
     container = getContainer name
-    container.inspect callback
-
-  async.eachSeries list, iterator, done
+    container.inspectAsync()
+  .nodeify done
 
 getRunArg = (key, val, object, done) ->
   arg = []
@@ -539,3 +538,6 @@ isRunning = (container) ->
 getContainer = (name) ->
   container = docker.getContainer name
   return Promise.promisifyAll container
+
+  eachSeries = (array, iterator) ->
+    array.reduce iterator, Promise.resolve()
