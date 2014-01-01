@@ -214,7 +214,8 @@ class Decking
     iterator = (details, callback) ->
       name = details.name
       container = getContainer name
-      container.inspect (err, data) ->
+      container.inspectAsync()
+      .then (data) ->
         if err # @TODO inspect
           logAction name, "does not exist"
         else if data.State.Running
@@ -222,7 +223,7 @@ class Decking
         else
           logAction name, "stopped"
 
-        callback null
+      .nodeify callback
 
     # true, we don't care about the order of a cluster,
     # but we *do* care about implicit containers, so we have to run this
