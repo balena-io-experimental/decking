@@ -6,6 +6,7 @@ DepTree       = require "deptree"
 read          = require "read"
 Docker        = require "dockerode"
 JSONStream    = require "JSONStream"
+Promise       = require "bluebird"
 
 MultiplexStream = require "./multiplex_stream"
 
@@ -163,7 +164,8 @@ class Decking
     timeout = 600
 
     reAttach = (name, container, attempts = 0) ->
-      setTimeout ->
+      Promise.delay(timeout)
+      .then ->
         isRunning container, (err, running) ->
           if running
             attach name, container, false, ->
@@ -173,7 +175,6 @@ class Decking
               reAttach name, container, attempts + 1
             else
               logAction name, "max re-attach attempts reached, bailing..."
-      , timeout
 
     attach = (name, container, fetchLogs, callback) ->
       options =
@@ -307,9 +308,9 @@ class Decking
         async.eachSeries commands, createIterator, (err) ->
           throw err if err
           # @FIXME hack to avoid ghosts with quick start/stop combos
-          setTimeout ->
+          Promise.delay(500)
+          .then ->
             async.eachLimit list, 5, stopIterator, done
-          , 500
 
   build: (image, done) ->
 

@@ -7,7 +7,7 @@
   "scripts": {
     "prepublish": "grunt"
   },
-  "repository" : {
+  "repository": {
     "type": "git",
     "url": "http://github.com/makeusabrew/decking.git"
   },
@@ -25,6 +25,7 @@
     "node-uuid": "~1.4.1",
     "deptree": "~0.1.0",
     "read": "~1.0.5",
-    "JSONStream": "~0.7.1"
+    "JSONStream": "~0.7.1",
+    "bluebird": "~0.11.6-0"
   }
 }
