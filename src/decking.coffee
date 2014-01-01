@@ -110,12 +110,10 @@ class Decking
 
     resolveOrder(@config, cluster)
     .then (list) ->
-
-      validateContainerPresence list, (err) ->
-        return done err if err
-
-        eachSeries(list, iterator)
-        .nodeify done
+      validateContainerPresence list
+      .then ->
+        eachSeries list, iterator
+    .nodeify done
 
 
   stop: (cluster, done) ->
@@ -137,12 +135,10 @@ class Decking
 
     resolveOrder(@config, cluster)
     .then (list) ->
-
-      validateContainerPresence list, (err) ->
-        return done err if err
-
-        eachSeries(list, iterator)
-        .nodeify done
+      validateContainerPresence list
+      .then ->
+        eachSeries list, iterator
+    .nodeify done
 
   restart: (cluster, done) ->
     iterator = (details) ->
@@ -161,12 +157,10 @@ class Decking
 
     resolveOrder(@config, cluster)
     .then (list) ->
-
-      validateContainerPresence list, (err) ->
-        return done err if err
-
-        eachSeries(list, iterator)
-        .nodeify done
+      validateContainerPresence list
+      .then ->
+        eachSeries list, iterator
+    .nodeify done
 
   attach: (cluster, done) ->
 
@@ -210,12 +204,10 @@ class Decking
 
     resolveOrder(@config, cluster)
     .then (list) ->
-
-      validateContainerPresence list, (err) ->
-        return done err if err
-
-        eachSeries(list, iterator)
-        .nodeify(done)
+      validateContainerPresence list
+      .then ->
+        eachSeries list, iterator
+    .nodeify done
 
   status: (cluster, done) ->
 
@@ -454,12 +446,11 @@ resolveOrder = (config, cluster) ->
 
   return Promise.resolve(list)
 
-validateContainerPresence = (list, done) ->
+validateContainerPresence = (list) ->
   eachSeries list, (details) ->
     name = details.name
     container = getContainer name
     container.inspectAsync()
-  .nodeify done
 
 getRunArg = (key, val, object, done) ->
   arg = []
