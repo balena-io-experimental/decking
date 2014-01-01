@@ -99,7 +99,8 @@ class Decking
     iterator = (details, callback) ->
       name = details.name
       container = getContainer name
-      isRunning container, (err, running) ->
+      isRunning(container)
+      .then (running) ->
         if not running
           logAction name, "starting..."
           container.start callback
@@ -123,7 +124,8 @@ class Decking
     iterator = (details, callback) ->
       name = details.name
       container = getContainer name
-      isRunning container, (err, running) ->
+      isRunning(container)
+      .then (running) ->
         if running
           logAction name, "stopping..."
           container.stop callback
@@ -142,7 +144,8 @@ class Decking
     iterator = (details, callback) ->
       name = details.name
       container = getContainer name
-      isRunning container, (err, running) ->
+      isRunning(container)
+      .then (running) ->
         if running
           logAction name, "restarting..."
           container.stop (err) ->
@@ -166,15 +169,16 @@ class Decking
     reAttach = (name, container, attempts = 0) ->
       Promise.delay(timeout)
       .then ->
-        isRunning container, (err, running) ->
-          if running
-            attach name, container, false, ->
-              logAction name, "re-attached"
+        isRunning container
+      .then (running) ->
+        if running
+          attach name, container, false, ->
+            logAction name, "re-attached"
+        else
+          if attempts < 100
+            reAttach name, container, attempts + 1
           else
-            if attempts < 100
-              reAttach name, container, attempts + 1
-            else
-              logAction name, "max re-attach attempts reached, bailing..."
+            logAction name, "max re-attach attempts reached, bailing..."
 
     attach = (name, container, fetchLogs, callback) ->
       options =
@@ -287,7 +291,8 @@ class Decking
         #log "Container #{name} already exists, skipping..."
         # @TODO check if this container has dependents or not...
         logAction name, "already exists - running in case of dependents"
-        return isRunning command.container, (err, running) ->
+        return isRunning(command.container)
+        .then (running) ->
           return command.container.start callback if not running
 
           # container exists AND is running - stop, restart
@@ -517,11 +522,8 @@ getCluster = (config, cluster) ->
 
   return target
 
-isRunning = (container, callback) ->
-  container.inspect (err, data) ->
-    return callback err if err
-
-    return callback null, data.State.Running
+isRunning = (container) ->
+  container.inspectAsync().then -> data.State.Running
 
 getContainer = (name) ->
   container = docker.getContainer name
